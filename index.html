@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced MathGPT Calculator with Integrals</title>
+    <title>Advanced MathGPT Calculator with Inbuilt Calculator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,6 +41,22 @@
             border: 1px solid #ccc;
             background-color: white;
         }
+        #calculator {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #calculator input {
+            grid-column: span 4;
+            padding: 10px;
+            font-size: 1.2em;
+            text-align: right;
+        }
+        #calculator button {
+            padding: 20px;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -53,6 +69,28 @@
     <input type="file" id="fileInput">
     <button onclick="handleFileUpload()">Upload File</button>
     <canvas id="plotCanvas"></canvas>
+
+    <!-- Calculator UI -->
+    <div id="calculator">
+        <input type="text" id="calcDisplay" readonly>
+        <button onclick="appendToDisplay('7')">7</button>
+        <button onclick="appendToDisplay('8')">8</button>
+        <button onclick="appendToDisplay('9')">9</button>
+        <button onclick="appendToDisplay('/')">/</button>
+        <button onclick="appendToDisplay('4')">4</button>
+        <button onclick="appendToDisplay('5')">5</button>
+        <button onclick="appendToDisplay('6')">6</button>
+        <button onclick="appendToDisplay('*')">*</button>
+        <button onclick="appendToDisplay('1')">1</button>
+        <button onclick="appendToDisplay('2')">2</button>
+        <button onclick="appendToDisplay('3')">3</button>
+        <button onclick="appendToDisplay('-')">-</button>
+        <button onclick="appendToDisplay('0')">0</button>
+        <button onclick="appendToDisplay('.')">.</button>
+        <button onclick="calculateResult()">=</button>
+        <button onclick="appendToDisplay('+')">+</button>
+        <button onclick="clearDisplay()" colspan="4">C</button>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
@@ -76,7 +114,6 @@
         appendMessage('You', userInput);
 
         try {
-            // Check if userInput is a request to plot a function
             if (userInput.toLowerCase().includes('plot')) {
                 const functionToPlot = userInput.match(/plot\s*(.*)/i)[1];
                 plotFunction(functionToPlot);
@@ -103,7 +140,6 @@
             reader.onload = function(e) {
                 const content = e.target.result;
                 try {
-                    // Assume file content is a valid math expression
                     const result = math.evaluate(content);
                     appendMessage('MathGPT', `The answer is: ${result}`);
                 } catch (error) {
@@ -115,12 +151,10 @@
     }
 
     function plotFunction(func) {
-        // Clear previous chart
         if (chart) {
             chart.destroy();
         }
 
-        // Generate data points
         const xValues = [];
         const yValues = [];
         for (let x = -10; x <= 10; x += 0.1) {
@@ -128,7 +162,6 @@
             yValues.push(math.evaluate(func, {x: x}));
         }
 
-        // Create chart
         chart = new Chart(plotCanvas.getContext('2d'), {
             type: 'line',
             data: {
@@ -162,7 +195,6 @@
     }
 
     function solveIntegral(integralToSolve) {
-        // Numerical integration
         try {
             const integralResult = math.integral(integralToSolve, 'x').toString();
             appendMessage('MathGPT', `The indefinite integral is: ${integralResult}`);
@@ -170,29 +202,28 @@
             appendMessage('MathGPT', `Error: ${error.message}`);
         }
     }
-    function numericIntegrate(func, a, b, n) {
-    const h = (b - a) / n;
-    let sum = 0.5 * (math.evaluate(func, {x: a}) + math.evaluate(func, {x: b}));
-    for (let i = 1; i < n; i++) {
-        const x = a + i * h;
-        sum += math.evaluate(func, {x: x});
-    }
-    return sum * h;
-}
 
-function solveDefiniteIntegral(integralToSolve) {
-    const match = integralToSolve.match(/integrate\s*(.*)\s*from\s*([\d.]+)\s*to\s*([\d.]+)/i);
-    if (match) {
-        const func = match[1];
-        const a = parseFloat(match[2]);
-        const b = parseFloat(match[3]);
-        const result = numericIntegrate(func, a, b, 1000);
-        appendMessage('MathGPT', `The definite integral from ${a} to ${b} is approximately: ${result}`);
-    } else {
-        appendMessage('MathGPT', `Error: Invalid definite integral format.`);
+    function appendToDisplay(value) {
+        const display = document.getElementById('calcDisplay');
+        display.value += value;
     }
-}
 
+    function clearDisplay() {
+        const display = document.getElementById('calcDisplay');
+        display.value = '';
+    }
+
+    function calculateResult() {
+        const display = document.getElementById('calcDisplay');
+        try {
+            const result = math.evaluate(display.value);
+            display.value = result;
+            appendMessage('MathGPT', `The answer is: ${result}`);
+        } catch (error) {
+            display.value = 'Error';
+            appendMessage('MathGPT', `Error: ${error.message}`);
+        }
+    }
 </script>
 
 </body>
