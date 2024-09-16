@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced MathGPT Calculator with Integrals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #chatbox {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            background-color: white;
+            margin-bottom: 10px;
+        }
+        #userInput, #fileInput {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        canvas {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Advanced MathGPT</h1>
+    <div id="chatbox"></div>
+    <input type="text" id="userInput" placeholder="Enter a math question...">
+    <button onclick="sendMessage()">Submit</button>
+    <input type="file" id="fileInput">
+    <button onclick="handleFileUpload()">Upload File</button>
+    <canvas id="plotCanvas"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/4.1.0/chart.min.js"></script>
+<script>
+    const chatbox = document.getElementById('chatbox');
+    const plotCanvas = document.getElementById('plotCanvas');
+    let chart = null;
+
+    function appendMessage(sender, message) {
+        const messageElement = document.createElement('div');
+        messageElement.textContent = `${sender}: ${message}`;
+        chatbox.appendChild(messageElement);
+        chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+    }
+
+    function sendMessage() {
+        const userInput = document.getElementById('userInput').value;
+        if (userInput.trim() === '') return;
+        
+        appendMessage('You', userInput);
+
+        try {
+            // Check if userInput is a request to plot a function
+            if (userInput.toLowerCase().includes('plot')) {
+                const functionToPlot = userInput.match(/plot\s*(.*)/i)[1];
+                plotFunction(functionToPlot);
+            } else if (userInput.toLowerCase().includes('integrate')) {
+                const integralToSolve = userInput.match(/integrate\s*(.*)/i)[1];
+                solveIntegral(integralToSolve);
+            } else {
+                const result = math.evaluate(userInput);
+                appendMessage('MathGPT', `The answer is: ${result}`);
+            }
+        } catch (error) {
+            appendMessage('MathGPT', `Error: ${error.message}`);
+        }
+
+        document.getElementById('userInput').value = ''; // Clear the input field
+    }
+
+    function handleFileUpload() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                try {
+                    // Assume file content is a valid math expression
+                    const result = math.evaluate(content);
+                    appendMessage('MathGPT', `The answer is: ${result}`);
+                } catch (error) {
+                    appendMessage('MathGPT', `Error: ${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    function plotFunction(func) {
+        // Clear previous chart
+        if (chart) {
+            chart.destroy();
+        }
+
+        // Generate data points
+        const xValues = [];
+        const yValues = [];
+        for (let x = -10; x <= 10; x += 0.1) {
+            xValues.push(x);
+            yValues.push(math.evaluate(func, {x: x}));
+        }
+
+        // Create chart
+        chart = new Chart(plotCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: xValues,
+                datasets: [{
+                    label: func,
+                    data: yValues,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'x'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'f(x)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function solveIntegral(integralToSolve) {
+        // Numerical integration
+        try {
+            const integralResult = math.integral(integralToSolve, 'x').toString();
+            appendMessage('MathGPT', `The indefinite integral is: ${integralResult}`);
+        } catch (error) {
+            appendMessage('MathGPT', `Error: ${error.message}`);
+        }
+    }
+    function numericIntegrate(func, a, b, n) {
+    const h = (b - a) / n;
+    let sum = 0.5 * (math.evaluate(func, {x: a}) + math.evaluate(func, {x: b}));
+    for (let i = 1; i < n; i++) {
+        const x = a + i * h;
+        sum += math.evaluate(func, {x: x});
+    }
+    return sum * h;
+}
+
+function solveDefiniteIntegral(integralToSolve) {
+    const match = integralToSolve.match(/integrate\s*(.*)\s*from\s*([\d.]+)\s*to\s*([\d.]+)/i);
+    if (match) {
+        const func = match[1];
+        const a = parseFloat(match[2]);
+        const b = parseFloat(match[3]);
+        const result = numericIntegrate(func, a, b, 1000);
+        appendMessage('MathGPT', `The definite integral from ${a} to ${b} is approximately: ${result}`);
+    } else {
+        appendMessage('MathGPT', `Error: Invalid definite integral format.`);
+    }
+}
+
+</script>
+
+</body>
+</html>
